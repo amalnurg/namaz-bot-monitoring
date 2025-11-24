@@ -43,15 +43,33 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y sshpass
         
+    - name: Test SSH Connection
+      if: success()
+      run: |
+        echo "🔍 Тестируем SSH подключение..."
+        sshpass -p "hUDnVz8dUYui+9" ssh -o StrictHostKeyChecking=no \
+          root@109.73.203.214 "echo '✅ SSH подключение работает!' && whoami"
+        
     - name: Deploy Bot to Server
       if: success()
       run: |
         echo "🚀 Деплой бота на сервер..."
-        sshpass -p "${{ secrets.SERVER_PASSWORD }}" scp -o StrictHostKeyChecking=no \
-          namaz_bot.py root@${{ secrets.SERVER_HOST }}:/root/
+        sshpass -p "hUDnVz8dUYui+9" scp -o StrictHostKeyChecking=no \
+          namaz_bot.py root@109.73.203.214:/root/
         
-        echo "🔁 Перезапуск бота..."
-        sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
-          root@${{ secrets.SERVER_HOST }} "pkill -f namaz_bot.py || true; nohup python3 /root/namaz_bot.py > /root/bot.log 2>&1 &"
+        echo "🔁 Останавливаем старый бот..."
+        sshpass -p "hUDnVz8dUYui+9" ssh -o StrictHostKeyChecking=no \
+          root@109.73.203.214 "pkill -f 'python3.*namaz_bot.py' || echo 'Бот не был запущен'"
         
-        echo "✅ Деплой завершен!"
+        echo "🔄 Запускаем новый бот..."
+        sshpass -p "hUDnVz8dUYui+9" ssh -o StrictHostKeyChecking=no \
+          root@109.73.203.214 "cd /root && nohup python3 namaz_bot.py > bot.log 2>&1 &"
+        
+        echo "✅ Деплой завершен! Бот запущен."
+        
+    - name: Verify Deployment
+      if: success()
+      run: |
+        echo "🔎 Проверяем что бот запустился..."
+        sshpass -p "hUDnVz8dUYui+9" ssh -o StrictHostKeyChecking=no \
+          root@109.73.203.214 "ps aux | grep namaz_bot.py | grep -v grep && echo '✅ Бот работает!' || echo '❌ Бот не запущен'"
