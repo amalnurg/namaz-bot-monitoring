@@ -1,16 +1,17 @@
-name: Namaz Bot API Monitoring
+name: Namaz Bot CI/CD
 
 on:
   push:
     branches: [ main ]
   schedule:
-    - cron: '0 */6 * * *'  # Запуск каждые 6 часов
+    - cron: '0 */6 * * *'
 
 jobs:
-  api-monitoring:
+  ci-cd-pipeline:
     runs-on: ubuntu-latest
     
     steps:
+    # ==================== CI ЧАСТЬ ====================
     - name: Checkout code
       uses: actions/checkout@v4
       
@@ -22,7 +23,7 @@ jobs:
     - name: Install Newman
       run: npm install -g newman newman-reporter-html
       
-    - name: Run Namaz Bot API Tests
+    - name: Run API Tests
       run: |
         newman run "collections/Namaz Bot API Tests.postman_collection.json" \
         -e "environments/Namaz Bot Environment.postman_environment.json" \
@@ -32,5 +33,25 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: namaz-bot-monitoring-report
+        name: namaz-bot-report
         path: newman/
+    
+    # ==================== CD ЧАСТЬ ====================
+    - name: Install SSH tools
+      if: success()
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y sshpass
+        
+    - name: Deploy Bot to Server
+      if: success()
+      run: |
+        echo "🚀 Деплой бота на сервер..."
+        sshpass -p "${{ secrets.SERVER_PASSWORD }}" scp -o StrictHostKeyChecking=no \
+          namaz_bot.py root@${{ secrets.SERVER_HOST }}:/root/
+        
+        echo "🔁 Перезапуск бота..."
+        sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
+          root@${{ secrets.SERVER_HOST }} "pkill -f namaz_bot.py || true; nohup python3 /root/namaz_bot.py > /root/bot.log 2>&1 &"
+        
+        echo "✅ Деплой завершен!"
