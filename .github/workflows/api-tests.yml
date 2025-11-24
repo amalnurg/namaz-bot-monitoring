@@ -1,0 +1,36 @@
+name: Namaz Bot API Monitoring
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 */6 * * *'  # Запуск каждые 6 часов
+
+jobs:
+  api-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install Newman
+      run: npm install -g newman newman-reporter-html
+      
+    - name: Run Namaz Bot API Tests
+      run: |
+        newman run "collections/Namaz Bot API Tests.postman_collection.json" \
+        -e "environments/Namaz Bot Environment.postman_environment.json" \
+        -r cli,html
+        
+    - name: Upload HTML Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: namaz-bot-monitoring-report
+        path: newman/
