@@ -47,15 +47,15 @@ jobs:
       if: success()
       run: |
         echo "🚀 Деплой бота на сервер..."
-        sshpass -p "${{ secrets.SERVER_PASSWORD }}" scp -o StrictHostKeyChecking=no \
+        
+        # Копируем файл
+        sshpass -p "${{ secrets.SERVER_PASSWORD }}" scp -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
           namaz_bot.py ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/root/
+        echo "✅ Файл скопирован"
         
-        echo "🔍 Проверяем текущие процессы..."
-        sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "ps aux | grep namaz_bot.py | grep -v grep | awk '{print \$2}' | head -1"
+        # Запускаем бота в фоне и сразу выходим
+        sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /root && nohup python3 -c 'import subprocess; subprocess.Popen([\"python3\", \"namaz_bot.py\"], stdout=open(\"bot.log\", \"w\"), stderr=open(\"bot.log\", \"a\"))' &"
         
-        echo "🔄 Запускаем новый бот (старый автоматически заменится)..."
-        sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /root && nohup python3 namaz_bot.py > bot.log 2>&1 &"
-        
-        echo "✅ Деплой завершен! Новый бот запущен."
+        echo "✅ Команда запуска отправлена"
+        echo "🎉 Деплой завершен! Бот должен запуститься."
