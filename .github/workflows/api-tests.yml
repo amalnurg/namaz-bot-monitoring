@@ -52,17 +52,10 @@ jobs:
         
         echo "🔍 Проверяем текущие процессы..."
         sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "ps aux | grep namaz_bot.py | grep -v grep || echo 'Процессы не найдены'"
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "ps aux | grep namaz_bot.py | grep -v grep | awk '{print \$2}' | head -1"
         
-        echo "🔁 Аккуратно останавливаем бота..."
-        sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "pkill -f namaz_bot.py; exit 0"
-        
-        echo "⏳ Ждем 2 секунды..."
-        sleep 2
-        
-        echo "🔄 Запускаем новый бот..."
+        echo "🔄 Запускаем новый бот (старый автоматически заменится)..."
         sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /root && nohup python3 namaz_bot.py > bot.log 2>&1 &"
         
-        echo "✅ Деплой завершен!"
+        echo "✅ Деплой завершен! Новый бот запущен."
