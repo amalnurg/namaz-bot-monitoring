@@ -1,6 +1,13 @@
 name: Python Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Каждый день в 03:00 UTC (06:00 по Москве)
+    - cron: '0 3 * * *'
 
 jobs:
   test:
