@@ -1,4 +1,3 @@
-cat > namaz_bot_fixed.py << 'EOF'
 #!/usr/bin/env python3
 import requests
 import logging
@@ -259,4 +258,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-EOF
