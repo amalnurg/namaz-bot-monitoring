@@ -1,0 +1,48 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install pytest pytest-mock requests-mock freezegun
+      - name: Run Python tests
+        run: pytest tests/ -v
+
+  postman-tests:
+    needs: python-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Newman
+        run: npm install -g newman
+      - name: Run Postman tests
+        env:
+          TELEGRAM_BOT_TOKEN: \${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          newman run "collections/Namaz Bot API Tests.postman_collection.json" \
+            --env-var "telegram_bot_token=\$TELEGRAM_BOT_TOKEN"
+
+  deploy:
+    needs: postman-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 109.73.203.214
+          username: root
+          key: \${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/namaz-bot-monitoring
+            git pull origin main
+            echo "✅ Deployed successfully!"
