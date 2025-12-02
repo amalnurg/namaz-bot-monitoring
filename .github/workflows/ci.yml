@@ -3,6 +3,10 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main]
+  schedule:
+    # Каждый день в 03:00 UTC (06:00 по Москве)
+    - cron: '0 3 * * *'
+  workflow_dispatch:  # позволяет запускать вручную
 
 jobs:
   python-tests:
@@ -30,7 +34,7 @@ jobs:
           echo "🚀 Running API tests..."
           newman run "collections/Namaz Bot API Tests.postman_collection.json" \
             --folder "Get data"
-        continue-on-error: true  # Продолжаем даже если тесты падают
+        continue-on-error: true
 
   success:
     needs: [python-tests, api-tests]
@@ -40,11 +44,8 @@ jobs:
       - name: CI/CD Status
         run: |
           echo "🎉 CI/CD Pipeline completed!"
-          echo "✅ Python tests: passed"
-          echo "📊 API tests: executed"
-          echo "⚠️  Deploy: disabled (SSH key needs configuration)"
+          echo "✅ Python tests: ${{ needs.python-tests.result }}"
+          echo "�� API tests: ${{ needs.api-tests.result }}"
+          echo "🕒 Time: $(date)"
           echo ""
-          echo "Next steps:"
-          echo "1. Configure SSH_PRIVATE_KEY secret on GitHub"
-          echo "2. Add public key to ~/.ssh/authorized_keys on server"
-          echo "3. Enable deploy job"
+          echo "Next: configure SSH key for auto-deploy"
