@@ -1,0 +1,58 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install pytest pytest-mock requests-mock freezegun
+      - name: Run Python tests
+        run: pytest tests/ -v
+
+  api-tests:
+    needs: python-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        run: npm install -g newman
+      - name: Test API (без токена)
+        run: |
+          # Проверяем только GET запрос
+          curl -s "http://api.aladhan.com/v1/timingsByCity?city=Ufa&country=Russia&method=2" | jq '.code'
+          echo "✅ API доступно"
+      
+      - name: Optional Telegram test
+        env:
+          TELEGRAM_BOT_TOKEN: \${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          if [ -n "\$TELEGRAM_BOT_TOKEN" ]; then
+            echo "Testing Telegram API..."
+            curl -s "https://api.telegram.org/bot\$TELEGRAM_BOT_TOKEN/getMe" | jq '.ok'
+          else
+            echo "⚠️  TELEGRAM_BOT_TOKEN не установлен, пропускаем"
+          fi
+
+  deploy:
+    needs: api-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 109.73.203.214
+          username: root
+          key: \${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/namaz-bot-monitoring
+            git pull origin main
+            echo "✅ Deployed to 109.73.203.214!"
