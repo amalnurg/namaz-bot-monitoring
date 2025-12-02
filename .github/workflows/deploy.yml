@@ -29,8 +29,12 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: \${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
+          # Проверяем что токен доступен
+          echo "Token length: \${#TELEGRAM_BOT_TOKEN}"
+          
+          # Запускаем с правильным параметром
           newman run "collections/Namaz Bot API Tests.postman_collection.json" \
-            --env-var "telegram_bot_token=\$TELEGRAM_BOT_TOKEN"
+            --global-var "telegram_bot_token=\$TELEGRAM_BOT_TOKEN"
 
   deploy:
     needs: postman-tests
@@ -45,4 +49,4 @@ jobs:
           script: |
             cd /root/namaz-bot-monitoring
             git pull origin main
-            echo "✅ Deployed successfully!"
+            echo "✅ Deployed!"
