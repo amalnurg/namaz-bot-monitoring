@@ -25,16 +25,31 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Newman
         run: npm install -g newman
+      - name: Fix collection token
+        env:
+          TELEGRAM_BOT_TOKEN: \${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          echo "Original collection:"
+          ls -la "collections/"
+          
+          # Создаем коллекцию с подставленным токеном
+          COLLECTION_FILE="collections/Namaz Bot API Tests.postman_collection.json"
+          FIXED_FILE="collections/fixed-collection.json"
+          
+          # Заменяем {{telegram_bot_token}} на реальный токен
+          sed "s/{{telegram_bot_token}}/\$TELEGRAM_BOT_TOKEN/g" "\$COLLECTION_FILE" > "\$FIXED_FILE"
+          
+          echo "Fixed collection created"
+          echo "Checking replacement:"
+          grep -n "bot.*sendMessage" "\$FIXED_FILE"
+          
       - name: Run Postman tests
         env:
           TELEGRAM_BOT_TOKEN: \${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
-          # Проверяем что токен доступен
-          echo "Token length: \${#TELEGRAM_BOT_TOKEN}"
-          
-          # Запускаем с правильным параметром
-          newman run "collections/Namaz Bot API Tests.postman_collection.json" \
-            --global-var "telegram_bot_token=\$TELEGRAM_BOT_TOKEN"
+          # Запускаем исправленную коллекцию
+          echo "Running fixed collection..."
+          newman run "collections/fixed-collection.json"
 
   deploy:
     needs: postman-tests
@@ -49,4 +64,4 @@ jobs:
           script: |
             cd /root/namaz-bot-monitoring
             git pull origin main
-            echo "✅ Deployed!"
+            echo "✅ Deployed to 109.73.203.214!"
