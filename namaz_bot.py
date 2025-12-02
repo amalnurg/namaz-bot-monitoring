@@ -136,7 +136,7 @@ def check_prayer_time(timings, sent_notifications):
     next_prayer_time = None
     min_time_diff = float('inf')
     
-    # Сначала находим ближайший намаз
+    # НАХОДИМ ТОЛЬКО САМЫЙ БЛИЖАЙШИЙ НАМАЗ
     for prayer_key, prayer_name in prayers.items():
         prayer_time = timings[prayer_key]
         
@@ -152,7 +152,7 @@ def check_prayer_time(timings, sent_notifications):
         
         time_diff = (prayer_dt - now).total_seconds() / 60
         
-        # Находим ближайший намаз
+        # ИЩЕМ САМЫЙ БЛИЖАЙШИЙ (наименьшее time_diff > 0)
         if 0 < time_diff < min_time_diff:
             min_time_diff = time_diff
             next_prayer_name = prayer_name
@@ -160,9 +160,10 @@ def check_prayer_time(timings, sent_notifications):
         
         logger.info(f"🕌 {prayer_name}: {prayer_time} (через {time_diff:.1f} мин)")
     
-    # Улучшенная логика уведомлений - ТОЛЬКО ДЛЯ БЛИЖАЙШЕГО НАМАЗА
+    # УВЕДОМЛЕНИЕ ТОЛЬКО ДЛЯ САМОГО БЛИЖАЙШЕГО НАМАЗА!
     notification_sent = False
     
+    # ЕСЛИ ближайший намаз через 5 минут или меньше
     if next_prayer_name and 0 < min_time_diff <= 5:
         notification_key = f"{next_prayer_name}_{current_date}"
         cooldown_key = f"{next_prayer_name}_cooldown"
@@ -198,7 +199,6 @@ def check_prayer_time(timings, sent_notifications):
         else:
             notification_data = sent_notifications[notification_key]
             logger.info(f"📨 Уведомление для {next_prayer_name} уже было отправлено сегодня (в {notification_data.get('sent_at', 'unknown')})")
-    
     elif next_prayer_name:
         logger.info(f"📊 Ближайший намаз: {next_prayer_name} в {next_prayer_time} (через {min_time_diff:.1f} мин)")
     else:
